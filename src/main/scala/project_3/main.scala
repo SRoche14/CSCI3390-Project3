@@ -17,14 +17,22 @@ object main{
   Logger.getLogger("org.spark-project").setLevel(Level.WARN)
 
   def LubyMIS(g_in: Graph[Int, Int]): Graph[Int, Int] = {
+    val remaining_vertices = 0
     while (remaining_vertices >= 1) {
-        // To Implement
+        return g_in
     }
+    return g_in
   }
 
 
   def verifyMIS(g_in: Graph[Int, Int]): Boolean = {
-    // To Implement
+    val faulty_count = g_in.triplets.filter(e => (e.srcAttr == 1 && e.dstAttr == 1)).count
+    if(faulty_count > 0) {
+      return false
+    }
+    else {
+      return true
+    }
   }
 
 
@@ -67,7 +75,6 @@ object main{
       val edges = sc.textFile(args(1)).map(line => {val x = line.split(","); Edge(x(0).toLong, x(1).toLong , 1)} )
       val vertices = sc.textFile(args(2)).map(line => {val x = line.split(","); (x(0).toLong, x(1).toInt) })
       val g = Graph[Int, Int](vertices, edges, edgeStorageLevel = StorageLevel.MEMORY_AND_DISK, vertexStorageLevel = StorageLevel.MEMORY_AND_DISK)
-
       val ans = verifyMIS(g)
       if(ans)
         println("Yes")

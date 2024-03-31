@@ -1,0 +1,79 @@
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:3:12: object apache is not a member of package org[0m
+[0m[[0m[31merror[0m] [0m[0mimport org.apache.spark.sql.SparkSession[0m
+[0m[[0m[31merror[0m] [0m[0m           ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:4:12: object apache is not a member of package org[0m
+[0m[[0m[31merror[0m] [0m[0mimport org.apache.spark.sql.functions._[0m
+[0m[[0m[31merror[0m] [0m[0m           ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:5:12: object apache is not a member of package org[0m
+[0m[[0m[31merror[0m] [0m[0mimport org.apache.spark.SparkContext[0m
+[0m[[0m[31merror[0m] [0m[0m           ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:6:12: object apache is not a member of package org[0m
+[0m[[0m[31merror[0m] [0m[0mimport org.apache.spark.SparkConf[0m
+[0m[[0m[31merror[0m] [0m[0m           ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:7:12: object apache is not a member of package org[0m
+[0m[[0m[31merror[0m] [0m[0mimport org.apache.spark.rdd.RDD[0m
+[0m[[0m[31merror[0m] [0m[0m           ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:8:12: object apache is not a member of package org[0m
+[0m[[0m[31merror[0m] [0m[0mimport org.apache.spark.graphx._[0m
+[0m[[0m[31merror[0m] [0m[0m           ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:9:12: object apache is not a member of package org[0m
+[0m[[0m[31merror[0m] [0m[0mimport org.apache.spark.storage.StorageLevel[0m
+[0m[[0m[31merror[0m] [0m[0m           ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:10:12: object apache is not a member of package org[0m
+[0m[[0m[31merror[0m] [0m[0mimport org.apache.log4j.{Level, Logger}[0m
+[0m[[0m[31merror[0m] [0m[0m           ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:13:20: not found: value Logger[0m
+[0m[[0m[31merror[0m] [0m[0m  val rootLogger = Logger.getRootLogger()[0m
+[0m[[0m[31merror[0m] [0m[0m                   ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:16:3: not found: value Logger[0m
+[0m[[0m[31merror[0m] [0m[0m  Logger.getLogger("org.apache.spark").setLevel(Level.WARN)[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:16:49: not found: value Level[0m
+[0m[[0m[31merror[0m] [0m[0m  Logger.getLogger("org.apache.spark").setLevel(Level.WARN)[0m
+[0m[[0m[31merror[0m] [0m[0m                                                ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:17:3: not found: value Logger[0m
+[0m[[0m[31merror[0m] [0m[0m  Logger.getLogger("org.spark-project").setLevel(Level.WARN)[0m
+[0m[[0m[31merror[0m] [0m[0m  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:17:50: not found: value Level[0m
+[0m[[0m[31merror[0m] [0m[0m  Logger.getLogger("org.spark-project").setLevel(Level.WARN)[0m
+[0m[[0m[31merror[0m] [0m[0m                                                 ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:19:39: not found: type Graph[0m
+[0m[[0m[31merror[0m] [0m[0m  def LubyMIS(g_in: Graph[Int, Int]): Graph[Int, Int] = {[0m
+[0m[[0m[31merror[0m] [0m[0m                                      ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:19:21: not found: type Graph[0m
+[0m[[0m[31merror[0m] [0m[0m  def LubyMIS(g_in: Graph[Int, Int]): Graph[Int, Int] = {[0m
+[0m[[0m[31merror[0m] [0m[0m                    ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:20:12: not found: value remaining_vertices[0m
+[0m[[0m[31merror[0m] [0m[0m    while (remaining_vertices >= 1) {[0m
+[0m[[0m[31merror[0m] [0m[0m           ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:26:23: not found: type Graph[0m
+[0m[[0m[31merror[0m] [0m[0m  def verifyMIS(g_in: Graph[Int, Int]): Boolean = {[0m
+[0m[[0m[31merror[0m] [0m[0m                      ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:33:20: not found: type SparkConf[0m
+[0m[[0m[31merror[0m] [0m[0m    val conf = new SparkConf().setAppName("project_3")[0m
+[0m[[0m[31merror[0m] [0m[0m                   ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:34:18: not found: type SparkContext[0m
+[0m[[0m[31merror[0m] [0m[0m    val sc = new SparkContext(conf)[0m
+[0m[[0m[31merror[0m] [0m[0m                 ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:35:17: not found: value SparkSession[0m
+[0m[[0m[31merror[0m] [0m[0m    val spark = SparkSession.builder.config(conf).getOrCreate()[0m
+[0m[[0m[31merror[0m] [0m[0m                ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:49:15: not found: value Graph[0m
+[0m[[0m[31merror[0m] [0m[0m      val g = Graph.fromEdges[Int, Int](edges, 0, edgeStorageLevel = StorageLevel.MEMORY_AND_DISK, vertexStorageLevel = StorageLevel.MEMORY_AND_DISK)[0m
+[0m[[0m[31merror[0m] [0m[0m              ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:49:51: not found: value edgeStorageLevel[0m
+[0m[[0m[31merror[0m] [0m[0m      val g = Graph.fromEdges[Int, Int](edges, 0, edgeStorageLevel = StorageLevel.MEMORY_AND_DISK, vertexStorageLevel = StorageLevel.MEMORY_AND_DISK)[0m
+[0m[[0m[31merror[0m] [0m[0m                                                  ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:49:100: not found: value vertexStorageLevel[0m
+[0m[[0m[31merror[0m] [0m[0m      val g = Graph.fromEdges[Int, Int](edges, 0, edgeStorageLevel = StorageLevel.MEMORY_AND_DISK, vertexStorageLevel = StorageLevel.MEMORY_AND_DISK)[0m
+[0m[[0m[31merror[0m] [0m[0m                                                                                                   ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:69:15: not found: value Graph[0m
+[0m[[0m[31merror[0m] [0m[0m      val g = Graph[Int, Int](vertices, edges, edgeStorageLevel = StorageLevel.MEMORY_AND_DISK, vertexStorageLevel = StorageLevel.MEMORY_AND_DISK)[0m
+[0m[[0m[31merror[0m] [0m[0m              ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:69:48: not found: value edgeStorageLevel[0m
+[0m[[0m[31merror[0m] [0m[0m      val g = Graph[Int, Int](vertices, edges, edgeStorageLevel = StorageLevel.MEMORY_AND_DISK, vertexStorageLevel = StorageLevel.MEMORY_AND_DISK)[0m
+[0m[[0m[31merror[0m] [0m[0m                                               ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:69:97: not found: value vertexStorageLevel[0m
+[0m[[0m[31merror[0m] [0m[0m      val g = Graph[Int, Int](vertices, edges, edgeStorageLevel = StorageLevel.MEMORY_AND_DISK, vertexStorageLevel = StorageLevel.MEMORY_AND_DISK)[0m
+[0m[[0m[31merror[0m] [0m[0m                                                                                                ^[0m
+[0m[[0m[31merror[0m] [0m[0m26 errors found[0m
