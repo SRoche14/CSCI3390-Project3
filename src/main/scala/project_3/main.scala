@@ -8,20 +8,72 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.graphx._
 import org.apache.spark.storage.StorageLevel
 import org.apache.log4j.{Level, Logger}
-
+// main function
 object main{
   val rootLogger = Logger.getRootLogger()
   rootLogger.setLevel(Level.ERROR)
-
   Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
   Logger.getLogger("org.spark-project").setLevel(Level.WARN)
 
+  case class VertexInfo(vertexId: Long, result: Int, degreeOfInterest: Int)
+
   def LubyMIS(g_in: Graph[Int, Int]): Graph[Int, Int] = {
-    val remaining_vertices = 0
+    var remaining_vertices = g_in.numVertices
+    var updated_g = g_in
+    var returned_g = g_in
+    returned_g = returned_g.mapVertices {(id, attr) => 0 }
+    val rand = new scala.util.Random
+    var degrees = g_in.degrees
     while (remaining_vertices >= 1) {
-        return g_in
+      val newGraph = updated_g.mapVertices { case (vertexId, value) => {
+        val degreeOfInterest: Int = degrees.filter { case (vertexId2, _) => vertexId2 == vertexId }.first()._2
+        val random_int = rand.nextInt(2*degreeOfInterest)
+        val result = if (random_int == 0) 1 else 0
+        VertexInfo(vertexId, result, degreeOfInterest)
+      }}
+      val highestCompetingNeighbors: VertexRDD[VertexInfo] = newGraph.aggregateMessages[VertexInfo](
+        triplet => { // Map Function
+          triplet.sendToDst(triplet.srcAttr)
+          triplet.sendToSrc(triplet.dstAttr)
+        },
+        (vertexInfo1, vertexInfo2) => {
+          if(vertexInfo1.degreeOfInterest >= vertexInfo2.degreeOfInterest && vertexInfo1.result == 1) {
+            vertexInfo1
+          }
+          else if (vertexInfo2.result == 1) {
+            vertexInfo2
+          }
+          else {
+            vertexInfo1
+          }
+        }
+      )
+      // Join the original graph's vertices with the highestCompetingNeighbors RDD based on vertex ID
+      val joinedVertices = newGraph.vertices.join(highestCompetingNeighbors)
+
+      // Update the original graph's vertices based on the comparison
+      val decisions = joinedVertices.map { case (vertexId, (originalInfo, competingInfo)) =>
+        // Compare originalInfo and competingInfo and decide if vertex joins MIS
+        if ((originalInfo.degreeOfInterest >= competingInfo.degreeOfInterest && originalInfo.result == 1)||(originalInfo.result == 1 && competingInfo.result == 0)) {
+          (vertexId, "Yes")
+        } else {
+          (vertexId, "No")
+        }
+      }
+      // Filter decisions RDD to select vertices with a decision of "Yes"
+      val mappedVertices = returned_g.vertices.join(decisions).mapValues { case (value, decision) => if (decision == "Yes") 1 else 0 }
+      returned_g = returned_g.mapVertices { case (vertexId, _) =>
+        mappedVertices.lookup(vertexId).headOption.getOrElse(0)
+      }
+      // now we go through our edges, delete everyone who has a "Yes" in the triplet. so we delete all vertices with a "Yes" as well as their neighbors
+      updated_g = updated_g.subgraph(epred = triplet => {
+        val srcDecision = decisions.lookup(triplet.srcId)._2
+        val dstDecision = decisions.lookup(triplet.dstId)._2
+        srcDecision != "Yes" && dstDecision != "Yes"
+      })
+      remaining_vertices = updated_g.numVertices
     }
-    return g_in
+    return returned_g
   }
 
 
@@ -62,6 +114,13 @@ object main{
       println("==================================")
       println("Luby's algorithm completed in " + durationSeconds + "s.")
       println("==================================")
+      
+      // also run MIS verify
+      val ans = verifyMIS(g2)
+      if(ans)
+        println("Yes")
+      else
+        println("No")
 
       val g2df = spark.createDataFrame(g2.vertices)
       g2df.coalesce(1).write.format("csv").mode("overwrite").save(args(2))
