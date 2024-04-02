@@ -24,7 +24,7 @@ object main{
     // returned_g is a copy of g_in, and we modify whether each vertex has a 1 (in the MIS)
     // OR a 0 (not in the MIS)
     var returned_g = g_in
-    returned_g = returned_g.mapVertices {(id, attr) => 0 }
+    returned_g = returned_g.mapVertices {(id, attr) => -1 }
     val rand = new scala.util.Random
     var degrees = g_in.degrees
     while (remaining_vertices >= 1) {
@@ -62,22 +62,22 @@ object main{
       // "Yes" means we want to add vertex to MIS, "No" means we do not.
       val decisions = joinedVertices.map { case (vertexId, (originalInfo, competingInfo)) =>
         // Compare originalInfo and competingInfo and decide if vertex joins MIS
-        if ((originalInfo.degreeOfInterest >= competingInfo.degreeOfInterest && originalInfo.result == 1)||(originalInfo.result == 1 && competingInfo.result == 0)) {
+        if ((originalInfo.degreeOfInterest >= competingInfo.degreeOfInterest && originalInfo.result == 1)||(originalInfo.result == 1 && competingInfo.result == -1)) {
           (vertexId, "Yes")
         } else {
           (vertexId, "No")
         }
       }
       // Filter decisions RDD to select vertices with a decision of "Yes"
-      val mappedVertices = returned_g.vertices.join(decisions).mapValues { case (value, decision) => if (decision == "Yes") 1 else 0 }
+      val mappedVertices = returned_g.vertices.join(decisions).mapValues { case (value, decision) => if (decision == "Yes") 1 else -1 }
       // we update returned_g with what we include in the MIS
       returned_g = returned_g.mapVertices { case (vertexId, _) =>
         mappedVertices.lookup(vertexId).headOption.getOrElse(0)
       }
       // now we go through our edges, delete everyone who has a "Yes" in the triplet. so we delete all vertices with a "Yes" as well as their neighbors
       updated_g = updated_g.subgraph(epred = triplet => {
-        val srcDecision = decisions.lookup(triplet.srcId)._2
-        val dstDecision = decisions.lookup(triplet.dstId)._2
+        val srcDecision = decisions.lookup(triplet.srcId).headOption.getOrElse("No")
+        val dstDecision = decisions.lookup(triplet.dstId).headOption.getOrElse("No")
         srcDecision != "Yes" && dstDecision != "Yes"
       })
       remaining_vertices = updated_g.numVertices
@@ -87,11 +87,37 @@ object main{
     return returned_g
   }
 
+  def hasNeighborWithAttributeOne(triplet: EdgeContext[Int, Int, Boolean], from: String): Boolean = {
+    if (triplet.srcAttr == 1 && from == "to_dst") {
+        return true
+    } else if (triplet.srcAttr == -1 && from == "to_dst") {
+        return false
+    } else if (triplet.dstAttr == 1 && from == "to_src") {
+        return true
+    } else {
+        return false
+    }
+  }
 
   def verifyMIS(g_in: Graph[Int, Int]): Boolean = {
     val faulty_count = g_in.triplets.filter(e => (e.srcAttr == 1 && e.dstAttr == 1)).count
+    val hasNeighborWithAttributeOneRDD = g_in.aggregateMessages[Boolean](
+    triplet => { // Map Function
+      triplet.sendToSrc(hasNeighborWithAttributeOne(triplet, "to_src"))
+      triplet.sendToDst(hasNeighborWithAttributeOne(triplet, "to_dst"))
+    },
+    (bool1, bool2) => bool1 || bool2 // Reduce Function
+    )
+    val joinedVertices = hasNeighborWithAttributeOneRDD.join(g_in.vertices)
 
-    if(faulty_count > 0) {
+    // Filter the joined RDD to find vertices with attribute 0 and hasNeighborWithAttributeOne = false
+    val filteredVertices = joinedVertices.filter {
+      case (_, (hasNeighbor, vertexAttr)) => vertexAttr == -1 && !hasNeighbor
+    }
+
+    // Check if any vertex exists in g_in with the specified conditions
+    val vertexExists: Boolean = filteredVertices.count() > 0
+    if(faulty_count > 0 || vertexExists) {
       return false
     }
     else {

@@ -1,7 +1,0 @@
-[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:70:59: value _2 is not a member of Seq[String][0m
-[0m[[0m[31merror[0m] [0m[0m        val srcDecision = decisions.lookup(triplet.srcId)._2[0m
-[0m[[0m[31merror[0m] [0m[0m                                                          ^[0m
-[0m[[0m[31merror[0m] [0m[0m/Users/sroche/Desktop/Project3/project_3/src/main/scala/project_3/main.scala:71:59: value _2 is not a member of Seq[String][0m
-[0m[[0m[31merror[0m] [0m[0m        val dstDecision = decisions.lookup(triplet.dstId)._2[0m
-[0m[[0m[31merror[0m] [0m[0m                                                          ^[0m
-[0m[[0m[31merror[0m] [0m[0mtwo errors found[0m
