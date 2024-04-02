@@ -81,6 +81,8 @@ object main{
         srcDecision != "Yes" && dstDecision != "Yes"
       })
       remaining_vertices = updated_g.numVertices
+      returned_g.cache()
+      updated_g.cache()
     }
     return returned_g
   }
@@ -88,6 +90,7 @@ object main{
 
   def verifyMIS(g_in: Graph[Int, Int]): Boolean = {
     val faulty_count = g_in.triplets.filter(e => (e.srcAttr == 1 && e.dstAttr == 1)).count
+
     if(faulty_count > 0) {
       return false
     }
