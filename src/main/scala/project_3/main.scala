@@ -19,7 +19,10 @@ object main{
 
   def LubyMIS(g_in: Graph[Int, Int]): Graph[Int, Int] = {
     var remaining_vertices = g_in.numVertices
+    // updated_g is the graph we will shrink
     var updated_g = g_in
+    // returned_g is a copy of g_in, and we modify whether each vertex has a 1 (in the MIS)
+    // OR a 0 (not in the MIS)
     var returned_g = g_in
     returned_g = returned_g.mapVertices {(id, attr) => 0 }
     val rand = new scala.util.Random
@@ -27,10 +30,14 @@ object main{
     while (remaining_vertices >= 1) {
       val newGraph = updated_g.mapVertices { case (vertexId, value) => {
         val degreeOfInterest: Int = degrees.filter { case (vertexId2, _) => vertexId2 == vertexId }.first()._2
+        // get random integer 0 up to 2 * degreeOfInterest (exclusive)
         val random_int = rand.nextInt(2*degreeOfInterest)
+        // see if we get 0, so that the probability is set appropriately
         val result = if (random_int == 0) 1 else 0
         VertexInfo(vertexId, result, degreeOfInterest)
       }}
+      // here, we write the merge function such that we get the neighbor with the highest degree and with a 1
+      // or, if no neighbor has a 1, we get a neighbor with a 0. we do this so we can compare in the next step
       val highestCompetingNeighbors: VertexRDD[VertexInfo] = newGraph.aggregateMessages[VertexInfo](
         triplet => { // Map Function
           triplet.sendToDst(triplet.srcAttr)
@@ -52,6 +59,7 @@ object main{
       val joinedVertices = newGraph.vertices.join(highestCompetingNeighbors)
 
       // Update the original graph's vertices based on the comparison
+      // "Yes" means we want to add vertex to MIS, "No" means we do not.
       val decisions = joinedVertices.map { case (vertexId, (originalInfo, competingInfo)) =>
         // Compare originalInfo and competingInfo and decide if vertex joins MIS
         if ((originalInfo.degreeOfInterest >= competingInfo.degreeOfInterest && originalInfo.result == 1)||(originalInfo.result == 1 && competingInfo.result == 0)) {
@@ -62,6 +70,7 @@ object main{
       }
       // Filter decisions RDD to select vertices with a decision of "Yes"
       val mappedVertices = returned_g.vertices.join(decisions).mapValues { case (value, decision) => if (decision == "Yes") 1 else 0 }
+      // we update returned_g with what we include in the MIS
       returned_g = returned_g.mapVertices { case (vertexId, _) =>
         mappedVertices.lookup(vertexId).headOption.getOrElse(0)
       }
