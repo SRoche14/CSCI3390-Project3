@@ -108,6 +108,7 @@ object main{
     println("Initial Size of graph: " + g_mod.numVertices)
     // Each vertex now stored as (vertexId, (zero_or_one, active))
     // Loop while active vertices exist
+    var iterations = 0
     while(anyActive(g_mod)){
       // Step 1 - set values
       g_mod = g_mod.mapVertices((_, prop: VertexProperties) => {
@@ -140,7 +141,7 @@ object main{
       val joinedVertices = g_mod.vertices.join(highest_neighbor).filter({
         case (_, (prop, competing)) => prop.active == "active"
       })
-      println("# of active vertices: " + joinedVertices.count())
+      // println("# of active vertices: " + joinedVertices.count())
       // Filter out vertices that lose to one of their neighbors (i.e. neighbors are in MIS)
       val message_comparison = joinedVertices.filter({
         case (id, (prop: VertexProperties, competing: VertexProperties)) => {
@@ -150,7 +151,7 @@ object main{
       })
       // Step 3 - Extract all vertices that have survived the comparison (will be added to MIS)
       val vertexIds_mis = message_comparison.map({ case ((id, (prop, competing))) => prop.id}).collect().toSet
-      println("Number of vertices added to MIS: " + vertexIds_mis.size)
+      println("\tNumber of vertices added to MIS: " + vertexIds_mis.size)
       // Add to the MIS
       mis_vertices = mis_vertices.union(vertexIds_mis)
       // Step 4 - check if each vertex or a neighbor of each vertex is in the MIS
@@ -169,7 +170,9 @@ object main{
       })
       // Cache the graph
       g_mod.cache()
+      iterations += 1
     }
+    print("Number of iterations: " + iterations)
     // Set vertices to 1 if in MIS, 0 otherwise
     val out_graph = g_in.mapVertices((id, _) => if (mis_vertices.contains(id)) 1 else -1)
     // Return the graph
@@ -238,7 +241,7 @@ object main{
 
       val endTimeMillis = System.currentTimeMillis()
       val durationSeconds = (endTimeMillis - startTimeMillis) / 1000
-      println("==================================")
+      println("\n==================================")
       println("Luby's algorithm completed in " + durationSeconds + "s.")
       println("==================================")
       
