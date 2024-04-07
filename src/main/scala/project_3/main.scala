@@ -88,7 +88,7 @@ object main{
   //   return returned_g
   // }
 
-  case class VertexProperties(degree: Int, zero_or_one: Int, active: String)
+  case class VertexProperties(id: Long, degree: Int, value: Double, active: String)
 
   // Define a function to see if any vertex is active
   def anyActive(g: Graph[VertexProperties, Int]): Boolean = {
@@ -99,13 +99,12 @@ object main{
 
   def LubyMIS(g_in: Graph[Int, Int]): Graph[Int, Int] = {
     // Create random generator
-    val rand = new scala.util.Random
     // Keep track of what vertex IDs are in the MIS
     var mis_vertices = Set[Long]()
     // Initialize graph to be modified (add properties)
     val degrees = g_in.degrees
     var degree_graph = g_in.outerJoinVertices(degrees)({ case (_, _, prop) => prop.getOrElse(0)})
-    var g_mod = degree_graph.mapVertices((_, degree) => VertexProperties(degree, -99, "active"))
+    var g_mod = degree_graph.mapVertices((id, degree) => VertexProperties(id, degree, -0.1, "active"))
     println("Initial Size of graph: " + g_mod.numVertices)
     // Each vertex now stored as (vertexId, (zero_or_one, active))
     // Loop while active vertices exist
@@ -116,9 +115,10 @@ object main{
         if (prop.active != "active") {
           prop
         } else {
-          // Set message to send to other vertices
-          val value = if (rand.nextDouble() < 1.0 / (2 * prop.degree)) 1 else 0
-          VertexProperties(prop.degree, value, prop.active)
+          // YOU MUST GENERATE A RANDOM VARIABLE WITHIN THIS BLOCK
+          val rand = new scala.util.Random
+          // val value = if (rand.nextDouble() < 1.0 / (2 * prop.degree)) 1 else 0
+          VertexProperties(prop.id, prop.degree, rand.nextDouble(), prop.active)
         }
       })
       // Step 2 - send message to neighbors and get highest competing neighbor
@@ -128,14 +128,11 @@ object main{
           triplet.sendToDst(triplet.srcAttr)
           triplet.sendToSrc(triplet.dstAttr)
         },
-        // Should we check to see if neighbors are inactive??
         (prop1, prop2) => {
-          if ((prop1.zero_or_one == 1) && (prop1.degree >= prop2.degree)) {
-            prop1 // First vertex beats its neighbor
-          } else if ((prop2.zero_or_one == 1) && (prop2.degree > prop1.degree)) {
-            prop2 // Other vertex has has a higher degree and is a 1 so it wins
+          if (prop1.value > prop2.value) {
+            prop1
           } else {
-            prop1 // Other vertices can be higher but are all 0
+            prop2
           }
         }
       )
@@ -147,13 +144,12 @@ object main{
       // Filter out vertices that lose to one of their neighbors (i.e. neighbors are in MIS)
       val message_comparison = joinedVertices.filter({
         case (id, (prop: VertexProperties, competing: VertexProperties)) => {
-          // Vertex stays in the MIS if it beats out its highest_neighbor 
-          // Because we do this in parallel two vertices may tie (be neighbors of each other) so we don't do anything if this is the case
-          (prop.zero_or_one == 1) && (prop.degree > competing.degree) || (prop.zero_or_one == 1 && competing.zero_or_one == 0)
+          // Check if the vertex is a local maxima (if true then add to MIS)
+          prop.value > competing.value 
         }
-      }).map({ case (id, (prop, competing)) => (id, prop)})
+      })
       // Step 3 - Extract all vertices that have survived the comparison (will be added to MIS)
-      val vertexIds_mis = message_comparison.map({ case (vertexId, _) => vertexId}).collect().toSet
+      val vertexIds_mis = message_comparison.map({ case ((id, (prop, competing))) => prop.id}).collect().toSet
       println("Number of vertices added to MIS: " + vertexIds_mis.size)
       // Add to the MIS
       mis_vertices = mis_vertices.union(vertexIds_mis)
@@ -166,7 +162,7 @@ object main{
       // Step 5 - update the graph and deactivate necessary vertices
       g_mod = g_mod.mapVertices((id, prop) => {
         if (vertexIds_mis_total.contains(id)) {
-          VertexProperties(prop.degree, -99, "inactive")
+          VertexProperties(prop.id, prop.degree, -0.1, "inactive")
         } else {
           prop
         }
