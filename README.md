@@ -1,4 +1,9 @@
 # Large Scale Data Processing: Project 3
+Authors:
+- Ilan Valencius (valencig)
+- Steven Roche (sroche14)
+- Jason Adhinarta (jasonkena)
+
 ## Getting started
 Head to [Project 1](https://github.com/CSCI3390Spring2024/project_1) if you're looking for information on Git, template repositories, or setting up your local/remote environments.
 
