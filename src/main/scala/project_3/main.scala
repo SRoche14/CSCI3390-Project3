@@ -89,6 +89,7 @@ object main{
       // Step 4 - check if each vertex or a neighbor of each vertex is in the MIS
       // Get the id of every vertex where the neighbor is in the MIS
       // val neighbor_mis = g_mod.triplets.filter(e => (vertexIds_mis.contains(e.srcId) || vertexIds_mis.contains(e.dstId)))
+      // val mis_neighbors = neighbor_mis.map(e => e.srcId).collect().toSet.union(neighbor_mis.map(e => e.dstId).collect().toSet)
       // select source and destination vertices from the neighbor_mis RDD
       // val mis_neighbors1 = neighbor_mis.map(e => e.srcId).collect().toSet
       // val mis_neighbors2 = neighbor_mis.map(e => e.dstId).collect().toSet
