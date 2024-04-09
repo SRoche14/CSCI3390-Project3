@@ -141,7 +141,7 @@ object main{
       val joinedVertices = g_mod.vertices.join(highest_neighbor).filter({
         case (_, (prop, competing)) => prop.active == "active"
       })
-      // println("# of active vertices: " + joinedVertices.count())
+      println("# of active vertices: " + joinedVertices.count())
       // Filter out vertices that lose to one of their neighbors (i.e. neighbors are in MIS)
       val message_comparison = joinedVertices.filter({
         case (id, (prop: VertexProperties, competing: VertexProperties)) => {
