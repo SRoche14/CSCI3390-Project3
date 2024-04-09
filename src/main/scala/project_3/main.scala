@@ -223,6 +223,8 @@ object main{
     val conf = new SparkConf().setAppName("project_3")
     val sc = new SparkContext(conf)
     val spark = SparkSession.builder.config(conf).getOrCreate()
+    /* hide INFO logs */
+    spark.sparkContext.setLogLevel("ERROR")
 /* You can either use sc or spark */
 
     if(args.length == 0) {
