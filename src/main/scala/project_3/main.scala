@@ -83,7 +83,7 @@ object main{
         }
       })
       // Step 3 - Extract all vertices that have survived the comparison (will be added to MIS)
-      val vertexIds_mis = message_comparison.map({ case ((id, (prop, competing))) => prop.id}).collect().toSet
+      val vertexIds_mis = message_comparison.map({ case ((id, (prop, competing))) => prop.id}).distinct().collect().toSet
       // println("\tNumber of vertices added to MIS: " + vertexIds_mis.size)
       // Add to the MIS
       //mis_vertices = mis_vertices.union(vertexIds_mis)
@@ -107,7 +107,7 @@ object main{
           flag1 || flag2
         }
       )
-      val mis_neighbors = neighbor_in_mis.filter({ case (_, flag) => flag}).map({ case (id, _) => id}).collect().toSet
+      val mis_neighbors = neighbor_in_mis.filter({ case (_, flag) => flag}).map({ case (id, _) => id}).distinct().collect().toSet
       // Join the two sets (neighbors + vertices in MIS)
       //val vertexIds_mis_total = vertexIds_mis.union(mis_neighbors)//.union(mis_neighbors2)
       // Step 5 - update the graph and deactivate necessary vertices
