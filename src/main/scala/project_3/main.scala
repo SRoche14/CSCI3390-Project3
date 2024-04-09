@@ -15,7 +15,7 @@ object main{
   Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
   Logger.getLogger("org.spark-project").setLevel(Level.WARN)
 
-  case class VertexProperties(id: Long, degree: Int, value: Double, active: String)
+  case class VertexProperties(id: Long, degree: Int, value: Double, active: String, in_MIS: String)
 
   // Define a function to see if any vertex is active
   def anyActive(g: Graph[VertexProperties, Int]): Boolean = {
@@ -35,8 +35,8 @@ object main{
     // Initialize graph to be modified (add properties)
     val degrees = g_in.degrees
     var degree_graph = g_in.outerJoinVertices(degrees)({ case (_, _, prop) => prop.getOrElse(0)})
-    var g_mod = degree_graph.mapVertices((id, degree) => VertexProperties(id, degree, -0.1, "active"))
-    println("Initial Size of graph: " + g_mod.numVertices)
+    var g_mod = degree_graph.mapVertices((id, degree) => VertexProperties(id, degree, -0.1, "active", "No"))
+    g_mod.cache()
     // Each vertex now stored as (vertexId, (zero_or_one, active))
     // Loop while active vertices exist
     var iterations = 0
@@ -50,9 +50,11 @@ object main{
           // YOU MUST GENERATE A RANDOM VARIABLE WITHIN THIS BLOCK
           val rand = new scala.util.Random
           // val value = if (rand.nextDouble() < 1.0 / (2 * prop.degree)) 1 else 0
-          VertexProperties(prop.id, prop.degree, rand.nextDouble(), prop.active)
+          VertexProperties(prop.id, prop.degree, rand.nextDouble(), prop.active, prop.in_MIS)
         }
       })
+      // Cache the graph
+      // g_mod.cache()
       // Step 2 - send message to neighbors and get highest competing neighbor
       // Compare the degree of the neighbors and the zero_or_one value
       val highest_neighbor: VertexRDD[VertexProperties] = g_mod.aggregateMessages[VertexProperties](
@@ -72,7 +74,7 @@ object main{
       val joinedVertices = g_mod.vertices.join(highest_neighbor).filter({
         case (_, (prop, competing)) => prop.active == "active"
       })
-      println("# of active vertices: " + joinedVertices.count())
+      // println("# of active vertices: " + joinedVertices.count())
       // Filter out vertices that lose to one of their neighbors (i.e. neighbors are in MIS)
       val message_comparison = joinedVertices.filter({
         case (id, (prop: VertexProperties, competing: VertexProperties)) => {
@@ -84,38 +86,59 @@ object main{
       val vertexIds_mis = message_comparison.map({ case ((id, (prop, competing))) => prop.id}).collect().toSet
       // println("\tNumber of vertices added to MIS: " + vertexIds_mis.size)
       // Add to the MIS
-      mis_vertices = mis_vertices.union(vertexIds_mis)
+      //mis_vertices = mis_vertices.union(vertexIds_mis)
       // mis_vertices = mis_vertices.map({case (id, _) => if (inRDD(vertexIds_mis, id)) (id, 1) else (id, -1)})
       // Step 4 - check if each vertex or a neighbor of each vertex is in the MIS
       // Get the id of every vertex where the neighbor is in the MIS
-      // use GraphX
-      val neighbor_mis = g_mod.collectNeighborIds(EdgeDirection.Either).flatMap({ case (id, neighbors) => {
-        if (mis_vertices.contains(id)) {
-          neighbors
-        } else {
-          List()
+      // val neighbor_mis = g_mod.triplets.filter(e => (vertexIds_mis.contains(e.srcId) || vertexIds_mis.contains(e.dstId)))
+      // val mis_neighbors = neighbor_mis.map(e => e.srcId).collect().toSet.union(neighbor_mis.map(e => e.dstId).collect().toSet)
+      // select source and destination vertices from the neighbor_mis RDD
+      // val mis_neighbors1 = neighbor_mis.map(e => e.srcId).collect().toSet
+      // val mis_neighbors2 = neighbor_mis.map(e => e.dstId).collect().toSet
+      // val mis_neighbors1 = g_mod.triplets.filter(e => (vertexIds_mis.contains(e.srcId))).map(e => e.dstId).collect().toSet
+      // val mis_neighbors2 = g_mod.triplets.filter(e => (vertexIds_mis.contains(e.dstId))).map(e => e.srcId).collect().toSet
+      val in_mis_graph = g_in.mapVertices((id, _) => vertexIds_mis.contains(id))
+      val neighbor_in_mis: VertexRDD[Boolean] = in_mis_graph.aggregateMessages[Boolean](
+        triplet => { // Map Function -> send a flag to the source and destination vertices on if the neighbor is in the MIS
+          triplet.sendToDst(triplet.srcAttr)
+          triplet.sendToSrc(triplet.dstAttr)
+        },
+        (flag1, flag2) => {
+          flag1 || flag2
         }
-      }}).collect().toSet
+      )
+      val mis_neighbors = neighbor_in_mis.filter({ case (_, flag) => flag}).map({ case (id, _) => id}).collect().toSet
       // Join the two sets (neighbors + vertices in MIS)
-      val vertexIds_mis_total = vertexIds_mis.union(neighbor_mis)
+      //val vertexIds_mis_total = vertexIds_mis.union(mis_neighbors)//.union(mis_neighbors2)
       // Step 5 - update the graph and deactivate necessary vertices
       g_mod = g_mod.mapVertices((id, prop) => {
-        if (vertexIds_mis_total.contains(id)) {
-          VertexProperties(prop.id, prop.degree, -0.1, "inactive")
+        if (vertexIds_mis.contains(id)) {
+          VertexProperties(prop.id, prop.degree, -0.1, "inactive", "Yes")
+        }
+        else if (mis_neighbors.contains(id)) {
+          VertexProperties(prop.id, prop.degree, -0.1, "inactive", "No")
         } else {
           prop
         }
       })
-      println("\tNumber of vertices remaining: " + g_mod.vertices.filter({ case (_, prop) => prop.active == "active"}).count())
-
       // Cache the graph
-      g_mod.cache()
+      // g_mod.cache()
+      println("\tNumber of vertices remaining: " + g_mod.vertices.filter({ case (_, prop) => prop.active == "active"}).count())
       iterations += 1
     }
     print("Number of iterations: " + iterations)
     // val in_mis = mis_vertices.filter({ case (_, value) => value == 1}).map({ case (id, _) => id}).collect().toSet
     // Set vertices to 1 if in MIS, 0 otherwise
-    val out_graph = g_in.mapVertices((id, _) => if (mis_vertices.contains(id)) 1 else -1)
+    val vertexRDD = g_mod.vertices
+
+    // Filter vertices based on the condition prop.in_MIS == "Yes"
+    val verticesInMIS: RDD[VertexId] = vertexRDD
+      .filter { case (_, prop) => prop.in_MIS == "Yes" }
+      .map { case (id, _) => id }
+
+    // Collect the vertex IDs
+    val vertexIDs: Array[VertexId] = verticesInMIS.collect()
+    val out_graph = g_in.mapVertices((id, _) => if (vertexIDs.contains(id)) 1 else -1)
     // Return the graph
     return out_graph
   }
@@ -135,11 +158,11 @@ object main{
   def verifyMIS(g_in: Graph[Int, Int]): Boolean = {
     val faulty_count = g_in.triplets.filter(e => (e.srcAttr == 1 && e.dstAttr == 1)).count
     val hasNeighborWithAttributeOneRDD = g_in.aggregateMessages[Boolean](
-    triplet => { // Map Function
-      triplet.sendToSrc(hasNeighborWithAttributeOne(triplet, "to_src"))
-      triplet.sendToDst(hasNeighborWithAttributeOne(triplet, "to_dst"))
-    },
-    (bool1, bool2) => bool1 || bool2 // Reduce Function
+      triplet => { // Map Function
+        triplet.sendToSrc(hasNeighborWithAttributeOne(triplet, "to_src"))
+        triplet.sendToDst(hasNeighborWithAttributeOne(triplet, "to_dst"))
+      },
+      (bool1, bool2) => bool1 || bool2 // Reduce Function
     )
     val joinedVertices = hasNeighborWithAttributeOneRDD.join(g_in.vertices)
 
@@ -180,6 +203,7 @@ object main{
       val startTimeMillis = System.currentTimeMillis()
       val edges = sc.textFile(args(1)).map(line => {val x = line.split(","); Edge(x(0).toLong, x(1).toLong , 1)} )
       val g = Graph.fromEdges[Int, Int](edges, 0, edgeStorageLevel = StorageLevel.MEMORY_AND_DISK, vertexStorageLevel = StorageLevel.MEMORY_AND_DISK)
+      println("Starting LubyMIS")
       val g2 = LubyMIS(g)
 
       val endTimeMillis = System.currentTimeMillis()
