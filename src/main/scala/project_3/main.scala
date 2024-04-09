@@ -36,6 +36,7 @@ object main{
     val degrees = g_in.degrees
     var degree_graph = g_in.outerJoinVertices(degrees)({ case (_, _, prop) => prop.getOrElse(0)})
     var g_mod = degree_graph.mapVertices((id, degree) => VertexProperties(id, degree, -0.1, "active"))
+    g_mod.cache()
     // Each vertex now stored as (vertexId, (zero_or_one, active))
     // Loop while active vertices exist
     var iterations = 0
@@ -53,7 +54,7 @@ object main{
         }
       })
       // Cache the graph
-      g_mod.cache()
+      // g_mod.cache()
       // Step 2 - send message to neighbors and get highest competing neighbor
       // Compare the degree of the neighbors and the zero_or_one value
       val highest_neighbor: VertexRDD[VertexProperties] = g_mod.aggregateMessages[VertexProperties](
@@ -118,7 +119,7 @@ object main{
         }
       })
       // Cache the graph
-      g_mod.cache()
+      // g_mod.cache()
       println("\tNumber of vertices remaining: " + g_mod.vertices.filter({ case (_, prop) => prop.active == "active"}).count())
       iterations += 1
     }
