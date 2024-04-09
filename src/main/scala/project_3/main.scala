@@ -24,10 +24,14 @@ object main{
       ).count() > 0
   }
 
+  // Returns true if the RDD contains the value
+  def inRDD(rdd: RDD[Long], value: Long): Boolean = {
+    rdd.filter(e => e == value).count() > 0
+  }
+
   def LubyMIS(g_in: Graph[Int, Int]): Graph[Int, Int] = {
-    // Create random generator
     // Keep track of what vertex IDs are in the MIS
-    var mis_vertices = Set[Long]()
+    var mis_vertices = g_in.vertices.map({case (id,_ ) => (id, -1)})//Set[Long]()
     // Initialize graph to be modified (add properties)
     val degrees = g_in.degrees
     var degree_graph = g_in.outerJoinVertices(degrees)({ case (_, _, prop) => prop.getOrElse(0)})
@@ -77,19 +81,21 @@ object main{
         }
       })
       // Step 3 - Extract all vertices that have survived the comparison (will be added to MIS)
-      val vertexIds_mis = message_comparison.map({ case ((id, (prop, competing))) => prop.id}).collect().toSet
+      val vertexIds_mis = message_comparison.map({ case ((id, (prop, competing))) => prop.id})
       // println("\tNumber of vertices added to MIS: " + vertexIds_mis.size)
-      // Add to the MIS
-      mis_vertices = mis_vertices.union(vertexIds_mis)
+      // Add to the MIS RDD
+      mis_vertices = mis_vertices.map({case (id, _) => if (inRDD(vertexIds_mis, id)) (id, 1) else (id, -1)})
       // Step 4 - check if each vertex or a neighbor of each vertex is in the MIS
       // Get the id of every vertex where the neighbor is in the MIS
-      val neighbor_mis = g_mod.triplets.filter(e => (vertexIds_mis.contains(e.srcId) || vertexIds_mis.contains(e.dstId)))
-      val vertexIds_mis_neighbors = neighbor_mis.map(e => e.srcId).collect().toSet.union(neighbor_mis.map(e => e.dstId).collect().toSet)
+      val neighbor_mis = g_mod.triplets.filter(e => (inRDD(vertexIds_mis, e.srcId) || inRDD(vertexIds_mis, e.dstId)))
+      // select source and destination vertices from the neighbor_mis RDD
+      val mis_neighbors1 = neighbor_mis.map(e => e.srcId)
+      val mis_neighbors2 = neighbor_mis.map(e => e.dstId)
       // Join the two sets (neighbors + vertices in MIS)
-      val vertexIds_mis_total = vertexIds_mis.toSet.union(vertexIds_mis_neighbors)
+      // val vertexIds_mis_total = vertexIds_mis.join(vertexIds_mis_neighbors)
       // Step 5 - update the graph and deactivate necessary vertices
       g_mod = g_mod.mapVertices((id, prop) => {
-        if (vertexIds_mis_total.contains(id)) {
+        if (inRDD(vertexIds_mis, id) || inRDD(mis_neighbors1, id) || inRDD(mis_neighbors2, id)) {
           VertexProperties(prop.id, prop.degree, -0.1, "inactive")
         } else {
           prop
@@ -102,8 +108,9 @@ object main{
       iterations += 1
     }
     print("Number of iterations: " + iterations)
+    val in_mis = mis_vertices.filter({ case (_, value) => value == 1}).map({ case (id, _) => id}).collect().toSet
     // Set vertices to 1 if in MIS, 0 otherwise
-    val out_graph = g_in.mapVertices((id, _) => if (mis_vertices.contains(id)) 1 else -1)
+    val out_graph = g_in.mapVertices((id, _) => if (in_mis.contains(id)) 1 else -1)
     // Return the graph
     return out_graph
   }
