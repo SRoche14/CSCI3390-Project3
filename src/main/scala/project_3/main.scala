@@ -36,7 +36,6 @@ object main{
     val degrees = g_in.degrees
     var degree_graph = g_in.outerJoinVertices(degrees)({ case (_, _, prop) => prop.getOrElse(0)})
     var g_mod = degree_graph.mapVertices((id, degree) => VertexProperties(id, degree, -0.1, "active"))
-    println("Initial Size of graph: " + g_mod.numVertices)
     // Each vertex now stored as (vertexId, (zero_or_one, active))
     // Loop while active vertices exist
     var iterations = 0
@@ -53,6 +52,8 @@ object main{
           VertexProperties(prop.id, prop.degree, rand.nextDouble(), prop.active)
         }
       })
+      // Cache the graph
+      g_mod.cache()
       // Step 2 - send message to neighbors and get highest competing neighbor
       // Compare the degree of the neighbors and the zero_or_one value
       val highest_neighbor: VertexRDD[VertexProperties] = g_mod.aggregateMessages[VertexProperties](
@@ -72,7 +73,7 @@ object main{
       val joinedVertices = g_mod.vertices.join(highest_neighbor).filter({
         case (_, (prop, competing)) => prop.active == "active"
       })
-      println("# of active vertices: " + joinedVertices.count())
+      // println("# of active vertices: " + joinedVertices.count())
       // Filter out vertices that lose to one of their neighbors (i.e. neighbors are in MIS)
       val message_comparison = joinedVertices.filter({
         case (id, (prop: VertexProperties, competing: VertexProperties)) => {
@@ -95,17 +96,17 @@ object main{
       // val mis_neighbors2 = neighbor_mis.map(e => e.dstId).collect().toSet
       // val mis_neighbors1 = g_mod.triplets.filter(e => (vertexIds_mis.contains(e.srcId))).map(e => e.dstId).collect().toSet
       // val mis_neighbors2 = g_mod.triplets.filter(e => (vertexIds_mis.contains(e.dstId))).map(e => e.srcId).collect().toSet
-      val in_mis_graph = g_in.mapVertices((id, _) => if (vertexIds_mis.contains(id)) 1 else -1)
-      val neighbor_in_mis: VertexRDD[Int] = in_mis_graph.aggregateMessages[Int](
+      val in_mis_graph = g_in.mapVertices((id, _) => vertexIds_mis.contains(id))
+      val neighbor_in_mis: VertexRDD[Boolean] = in_mis_graph.aggregateMessages[Boolean](
         triplet => { // Map Function -> send a flag to the source and destination vertices on if the neighbor is in the MIS
           triplet.sendToDst(triplet.srcAttr)
           triplet.sendToSrc(triplet.dstAttr)
         },
-        (prop1, prop2) => {
-          if ((prop1 == 1) || (prop2 == 1)){ 1 } else { -1 }
+        (flag1, flag2) => {
+          flag1 || flag2
         }
       )
-      val mis_neighbors = neighbor_in_mis.filter({ case (_, prop) => prop == 1}).map({ case (id, _) => id}).collect().toSet
+      val mis_neighbors = neighbor_in_mis.filter({ case (_, flag) => flag}).map({ case (id, _) => id}).collect().toSet
       // Join the two sets (neighbors + vertices in MIS)
       val vertexIds_mis_total = vertexIds_mis.union(mis_neighbors)//.union(mis_neighbors2)
       // Step 5 - update the graph and deactivate necessary vertices
@@ -116,10 +117,9 @@ object main{
           prop
         }
       })
-      println("\tNumber of vertices remaining: " + g_mod.vertices.filter({ case (_, prop) => prop.active == "active"}).count())
-
       // Cache the graph
       g_mod.cache()
+      println("\tNumber of vertices remaining: " + g_mod.vertices.filter({ case (_, prop) => prop.active == "active"}).count())
       iterations += 1
     }
     print("Number of iterations: " + iterations)
@@ -145,11 +145,11 @@ object main{
   def verifyMIS(g_in: Graph[Int, Int]): Boolean = {
     val faulty_count = g_in.triplets.filter(e => (e.srcAttr == 1 && e.dstAttr == 1)).count
     val hasNeighborWithAttributeOneRDD = g_in.aggregateMessages[Boolean](
-    triplet => { // Map Function
-      triplet.sendToSrc(hasNeighborWithAttributeOne(triplet, "to_src"))
-      triplet.sendToDst(hasNeighborWithAttributeOne(triplet, "to_dst"))
-    },
-    (bool1, bool2) => bool1 || bool2 // Reduce Function
+      triplet => { // Map Function
+        triplet.sendToSrc(hasNeighborWithAttributeOne(triplet, "to_src"))
+        triplet.sendToDst(hasNeighborWithAttributeOne(triplet, "to_dst"))
+      },
+      (bool1, bool2) => bool1 || bool2 // Reduce Function
     )
     val joinedVertices = hasNeighborWithAttributeOneRDD.join(g_in.vertices)
 
@@ -190,6 +190,7 @@ object main{
       val startTimeMillis = System.currentTimeMillis()
       val edges = sc.textFile(args(1)).map(line => {val x = line.split(","); Edge(x(0).toLong, x(1).toLong , 1)} )
       val g = Graph.fromEdges[Int, Int](edges, 0, edgeStorageLevel = StorageLevel.MEMORY_AND_DISK, vertexStorageLevel = StorageLevel.MEMORY_AND_DISK)
+      println("Starting LubyMIS")
       val g2 = LubyMIS(g)
 
       val endTimeMillis = System.currentTimeMillis()
