@@ -88,12 +88,25 @@ object main{
       // mis_vertices = mis_vertices.map({case (id, _) => if (inRDD(vertexIds_mis, id)) (id, 1) else (id, -1)})
       // Step 4 - check if each vertex or a neighbor of each vertex is in the MIS
       // Get the id of every vertex where the neighbor is in the MIS
-      val neighbor_mis = g_mod.triplets.filter(e => (vertexIds_mis.contains(e.srcId) || vertexIds_mis.contains(e.dstId)))
+      // val neighbor_mis = g_mod.triplets.filter(e => (vertexIds_mis.contains(e.srcId) || vertexIds_mis.contains(e.dstId)))
       // select source and destination vertices from the neighbor_mis RDD
-      val mis_neighbors1 = neighbor_mis.map(e => e.srcId).collect().toSet
-      val mis_neighbors2 = neighbor_mis.map(e => e.dstId).collect().toSet
+      // val mis_neighbors1 = neighbor_mis.map(e => e.srcId).collect().toSet
+      // val mis_neighbors2 = neighbor_mis.map(e => e.dstId).collect().toSet
+      // val mis_neighbors1 = g_mod.triplets.filter(e => (vertexIds_mis.contains(e.srcId))).map(e => e.dstId).collect().toSet
+      // val mis_neighbors2 = g_mod.triplets.filter(e => (vertexIds_mis.contains(e.dstId))).map(e => e.srcId).collect().toSet
+      val in_mis_graph = g_in.mapVertices((id, _) => if (vertexIds_mis.contains(id)) 1 else -1)
+      val neighbor_in_mis: VertexRDD[Int] = in_mis_graph.aggregateMessages[Int](
+        triplet => { // Map Function -> send a flag to the source and destination vertices on if the neighbor is in the MIS
+          triplet.sendToDst(triplet.srcAttr)
+          triplet.sendToSrc(triplet.dstAttr)
+        },
+        (prop1, prop2) => {
+          if ((prop1 == 1) || (prop2 == 1)){ 1 } else { -1 }
+        }
+      )
+      val mis_neighbors = neighbor_in_mis.filter({ case (_, prop) => prop == 1}).map({ case (id, _) => id}).collect().toSet
       // Join the two sets (neighbors + vertices in MIS)
-      val vertexIds_mis_total = vertexIds_mis.union(mis_neighbors1).union(mis_neighbors2)
+      val vertexIds_mis_total = vertexIds_mis.union(mis_neighbors)//.union(mis_neighbors2)
       // Step 5 - update the graph and deactivate necessary vertices
       g_mod = g_mod.mapVertices((id, prop) => {
         if (vertexIds_mis_total.contains(id)) {

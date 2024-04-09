@@ -26,3 +26,8 @@ twitter_1000:
 twitter_10000:
     spark-submit --class project_3.main --master local[*] target/scala-2.12/project_3_2.12-1.0.jar compute ./twitter_10000_edges.csv ./twitter_10000_edges_output.csv
     spark-submit --class project_3.main --master local[*] target/scala-2.12/project_3_2.12-1.0.jar verify ./twitter_10000_edges.csv ./twitter_10000_edges_output.csv
+
+
+twitter_original:
+    spark-submit --class project_3.main --master local[*] target/scala-2.12/project_3_2.12-1.0.jar compute ./twitter_original_edges.csv ./twitter_original_edges_output.csv
+    spark-submit --class project_3.main --master local[*] target/scala-2.12/project_3_2.12-1.0.jar verify ./twitter_original_edges.csv ./twitter_original_edges_output.csv
