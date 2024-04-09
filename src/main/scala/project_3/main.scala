@@ -88,12 +88,16 @@ object main{
       // mis_vertices = mis_vertices.map({case (id, _) => if (inRDD(vertexIds_mis, id)) (id, 1) else (id, -1)})
       // Step 4 - check if each vertex or a neighbor of each vertex is in the MIS
       // Get the id of every vertex where the neighbor is in the MIS
-      val neighbor_mis = g_mod.triplets.filter(e => (vertexIds_mis.contains(e.srcId) || vertexIds_mis.contains(e.dstId)))
-      // select source and destination vertices from the neighbor_mis RDD
-      val mis_neighbors1 = neighbor_mis.map(e => e.srcId).collect().toSet
-      val mis_neighbors2 = neighbor_mis.map(e => e.dstId).collect().toSet
+      // use GraphX
+      val neighbor_mis = g_mod.collectNeighborIds(EdgeDirection.Either).flatMap({ case (id, neighbors) => {
+        if (mis_vertices.contains(id)) {
+          neighbors
+        } else {
+          List()
+        }
+      }}).collect().toSet
       // Join the two sets (neighbors + vertices in MIS)
-      val vertexIds_mis_total = vertexIds_mis.union(mis_neighbors1).union(mis_neighbors2)
+      val vertexIds_mis_total = vertexIds_mis.union(neighbor_mis)
       // Step 5 - update the graph and deactivate necessary vertices
       g_mod = g_mod.mapVertices((id, prop) => {
         if (vertexIds_mis_total.contains(id)) {
