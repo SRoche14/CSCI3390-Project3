@@ -55,3 +55,6 @@ b. Run `LubyMIS` on `twitter_original_edges.csv` with 4x2 cores and then 2x2 cor
 | Configuration | Running time [s] | Iterations | Remaining active vertices | verifyMIS |
 | :------------: | :-: | :-: | :-: | :-: |
 | 3x4 cores     | 953 | 5 | 6584804, 32309, 427, 5, 0 | :white_check_mark: |
+| 2x2 cores     | 2257 | 5 | 7082835, 33850, 451, 2, 0 | :white_check_mark: |
+
+Here we see that having more cores means that the wall time is reduced. This is because the algorithm is parallelizable and can be split into multiple tasks that can be run concurrently. This means that the more cores we have, the more tasks can be run concurrently, and the faster the algorithm will run.
